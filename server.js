@@ -5,6 +5,7 @@ const fs = require('fs');
 const { Storage } = require('megajs');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const http = require('http');
 
 const app = express();
 const PORT = 3000;
@@ -41,7 +42,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         // Upload file to MEGA with file size specified
         const megaFile = megaStorage.upload({
             name: fileName,
-            size: fileSize, // Specify file size here
+            size: fileSize,
             allowUploadBuffering: true // Enable buffering
         });
 
@@ -65,13 +66,13 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
         // Generate a unique custom link
         const customId = uuidv4();
-        fileMappings[customId] = megaLink;
+        fileMappings[customId] = { megaLink, fileName };
 
         // Respond with the custom link
         res.status(200).json({
             success: true,
             message: 'File uploaded successfully',
-            url: `http:nikka-upload.onrender.com/files/${customId}`
+            url: `http://nikka-upload.onrender.com/files/${customId}`
         });
     } catch (error) {
         console.error('Error uploading to MEGA:', error);
@@ -79,7 +80,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     }
 });
 
-// Endpoint to handle custom links
+// Proxy endpoint for direct download
 app.get('/files/:id', (req, res) => {
     const customId = req.params.id;
 
@@ -87,13 +88,27 @@ app.get('/files/:id', (req, res) => {
         return res.status(404).json({ success: false, message: 'File not found' });
     }
 
-    // Redirect to the actual MEGA link
-    res.redirect(fileMappings[customId]);
+    const { megaLink, fileName } = fileMappings[customId];
+
+    // Stream the file directly from MEGA
+    http.get(megaLink, (megaResponse) => {
+        if (megaResponse.statusCode !== 200) {
+            return res.status(500).json({ success: false, message: 'Error accessing MEGA file' });
+        }
+
+        // Set the appropriate headers and pipe the file
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.setHeader('Content-Type', megaResponse.headers['content-type']);
+        megaResponse.pipe(res);
+    }).on('error', (err) => {
+        console.error('Error streaming file:', err);
+        res.status(500).json({ success: false, message: 'Error downloading file' });
+    });
 });
 
 // Serve index.html for root route
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, "index.html"));
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Start server
