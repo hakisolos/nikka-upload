@@ -23,8 +23,16 @@ const megaStorage = new Storage({ email: MEGA_EMAIL, password: MEGA_PASSWORD });
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the current directory
+app.use(express.static(path.join(__dirname)));
+
 // Temporary file storage
 const upload = multer({ dest: 'temp/' });
+
+// Serve `index.html` as the root route
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // Upload endpoint
 app.post('/upload', upload.single('file'), async (req, res) => {
