@@ -13,7 +13,7 @@ const PORT = 3000;
 const fileMappings = {};
 
 // MEGA credentials
-const MEGA_EMAIL = 'maxwellexcel2@gmail.com;
+const MEGA_EMAIL = 'maxwellexcel2@gmail.com';
 const MEGA_PASSWORD = 'mynameisexcel2';
 
 // Storage instance
