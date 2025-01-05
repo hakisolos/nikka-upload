@@ -5,11 +5,11 @@ const fs = require('fs');
 const { Storage } = require('megajs');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
-const http = require('http');
+const https = require('https'); // Use https for secure links
 
 const app = express();
 const PORT = 3000;
-//.
+
 // In-memory mapping (use a real database in production)
 const fileMappings = {};
 
@@ -90,8 +90,8 @@ app.get('/files/:id', (req, res) => {
 
     const { megaLink, fileName } = fileMappings[customId];
 
-    // Stream the file directly from MEGA
-    http.get(megaLink, (megaResponse) => {
+    // Stream the file directly from MEGA using https
+    https.get(megaLink, (megaResponse) => {
         if (megaResponse.statusCode !== 200) {
             return res.status(500).json({ success: false, message: 'Error accessing MEGA file' });
         }
