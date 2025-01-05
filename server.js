@@ -33,6 +33,7 @@ app.get('/', (req, res) => {
 });
 
 // Upload endpoint
+// Upload endpoint
 app.post('/upload', upload.single('file'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ success: false, message: 'No file uploaded' });
@@ -53,9 +54,16 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         fs.createReadStream(filePath).pipe(megaFile);
 
         // Wait for the upload to complete
-        const megaLink = await new Promise((resolve, reject) => {
-            megaFile.on('complete', file => resolve(file.link));
+        const megaFileDetails = await new Promise((resolve, reject) => {
+            megaFile.on('complete', resolve);
             megaFile.on('error', reject);
+        });
+
+        const megaLink = await new Promise((resolve, reject) => {
+            megaFileDetails.link((err, url) => {
+                if (err) return reject(err);
+                resolve(url);
+            });
         });
 
         // Remove temporary file
@@ -75,21 +83,4 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         console.error('Error uploading to MEGA:', error);
         res.status(500).json({ success: false, message: 'File upload failed' });
     }
-});
-
-// Endpoint to handle custom links
-app.get('/files/:id', (req, res) => {
-    const customId = req.params.id;
-
-    if (!fileMappings[customId]) {
-        return res.status(404).json({ success: false, message: 'File not found' });
-    }
-
-    // Redirect to the actual MEGA link
-    res.redirect(fileMappings[customId]);
-});
-
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
 });
