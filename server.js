@@ -22,17 +22,11 @@ const megaStorage = new Storage({ email: MEGA_EMAIL, password: MEGA_PASSWORD });
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname)); // Serve static files, including index.html
+app.use(express.static(path.join(__dirname, 'public'))); // Serve static files (e.g., index.html)
 
 // Temporary file storage
 const upload = multer({ dest: 'temp/' });
 
-// Serve `index.html` as the homepage
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Upload endpoint
 // Upload endpoint
 app.post('/upload', upload.single('file'), async (req, res) => {
     if (!req.file) {
@@ -77,10 +71,32 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         res.status(200).json({
             success: true,
             message: 'File uploaded successfully',
-            url: `nikka-upload.onrender.com/files/${customId}`
+            url: `http:nikka-upload.onrender.com/files/${customId}`
         });
     } catch (error) {
         console.error('Error uploading to MEGA:', error);
         res.status(500).json({ success: false, message: 'File upload failed' });
     }
+});
+
+// Endpoint to handle custom links
+app.get('/files/:id', (req, res) => {
+    const customId = req.params.id;
+
+    if (!fileMappings[customId]) {
+        return res.status(404).json({ success: false, message: 'File not found' });
+    }
+
+    // Redirect to the actual MEGA link
+    res.redirect(fileMappings[customId]);
+});
+
+// Serve index.html for root route
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// Start server
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
 });
