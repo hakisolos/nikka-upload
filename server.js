@@ -22,14 +22,12 @@ const megaStorage = new Storage({ email: MEGA_EMAIL, password: MEGA_PASSWORD });
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-// Serve static files from the current directory
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(__dirname)); // Serve static files, including index.html
 
 // Temporary file storage
 const upload = multer({ dest: 'temp/' });
 
-// Serve `index.html` as the root route
+// Serve `index.html` as the homepage
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -43,9 +41,15 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     try {
         const filePath = req.file.path;
         const fileName = req.file.originalname;
+        const fileSize = fs.statSync(filePath).size; // Get the file size
 
-        // Upload file to MEGA
-        const megaFile = megaStorage.upload({ name: fileName });
+        // Upload file to MEGA with file size specified
+        const megaFile = megaStorage.upload({
+            name: fileName,
+            size: fileSize, // Specify file size here
+            allowUploadBuffering: true // Enable buffering
+        });
+
         fs.createReadStream(filePath).pipe(megaFile);
 
         // Wait for the upload to complete
