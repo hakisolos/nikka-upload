@@ -69,7 +69,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         res.status(200).json({
             success: true,
             message: 'File uploaded successfully',
-            url: `http://localhost:${PORT}/files/${customId}`
+            url: `nikka-upload.onrender.com/files/${customId}`
         });
     } catch (error) {
         console.error('Error uploading to MEGA:', error);
